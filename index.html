@@ -1,0 +1,105 @@
+<html>
+<head>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <style type="text/css">
+        table#output td{
+            width: 1px;
+            height: 1px;
+        }
+    </style>
+</head>
+<body>
+    <img src="logo_old.jpg" style="display:none;" />
+    <input type="file" id="imageLoader" name="imageLoader"/><br />
+    <canvas id="canvas"></canvas><br/>
+    <table id="output" cellpadding="0" cellspacing="0"></table>
+
+    <script>
+        var imageLoader = document.getElementById('imageLoader');
+            imageLoader.addEventListener('change', handleImage, false);
+        var img = document.getElementsByTagName("img")[0];
+        var canvas = document.getElementsByTagName("canvas")[0];
+        var context = canvas.getContext("2d");
+        var height;
+        var width;
+
+        var dec2hex = function(d) {
+            var s = "00" + Number(d).toString(16);
+            return s.substring(s.length - 2);
+        }
+
+        function handleImage(e){
+            $('#output > tbody').empty();
+            var reader = new FileReader();
+            reader.onload = function(event){
+                var img = new Image();
+                img.onload = function(){
+                    renderImage(img);
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(e.target.files[0]);     
+        }
+
+        function renderImage(image) {
+            img = image;            
+            height = img.height;
+            width = img.width;
+            canvas.width = width;
+            canvas.height = height;
+            context.drawImage(img, 0, 0, width, height);
+
+            var Pixel = context.getImageData(0, 0, width, height);
+            var data = Pixel.data;
+            var row = $('<tr></tr>');
+            var i = 0;
+
+            console.log(data);
+
+            while(i < data.length) {
+
+                var color;
+                var streak = 1;
+
+                    while((i+4)/4 % width > 0 // Still same row
+                        && data[i] == data[i+4]
+                        && data[i+1] == data[i+5]
+                        && data[i+2] == data[i+6]
+                    ){
+                        streak++;
+                        i += 4;
+                    };
+                    color = dec2hex(data[i]) +
+                                dec2hex(data[i+1]) + 
+                                dec2hex(data[i+2]);
+
+                    if(data[i+3] == 0) {
+                        if(streak > 1){
+                            row.append('<td colspan="' + streak + '"></td>');
+                        }
+                        else{
+                            row.append('<td></td>');
+                        }
+                    }
+                    else {
+                        if(streak > 1){
+                            row.append('<td bgcolor="#' + color + '" colspan="' + streak + '"></td>');
+                        }
+                        else{
+                            row.append('<td bgcolor="#' + color + '"></td>');
+                        }
+                    }
+
+                if (i > 0 && (i+4)/4 % width == 0){
+                    $('#output').append(row);
+                    row = $('<tr></tr>');
+                }
+
+                i += 4;
+            }
+        }
+
+        $(document).ready(function() {renderImage(img)});
+    </script>
+</body>
+</html>
